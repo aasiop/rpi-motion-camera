@@ -1,20 +1,37 @@
 import cv2
 import time     #needed for file names
+import os
+from dotenv import load_dotenv
+from pathlib import Path
 from collections import deque   #needed for buffer before video starts
 
 if __name__ == "__main__":
+    load_dotenv()
+
     #CONFIG
     #======================
-    path='/srv/NAS/monitoring/Nagrania/'
-    resolution=(1280,720)
-    sensitivity=65      #higher value = less sensivity
-    buffer_time = 3     #time before detecting movement
-    after_detection_time = 7    #time after detecting movement
+    path=os.getenv("PROJECT_PATH")
+    resolution=(int(os.getenv("RESOLUTION_X")), int(os.getenv("RESOLUTION_Y")))
+    sensitivity=int(os.getenv("SENSITIVITY"))      #higher value = less sensivity
+    buffer_time=int(os.getenv("BUFFER_TIME"))     #time before detecting movement
+    after_detection_time=int(os.getenv("AFTER_DETECTION_TIME"))    #time after detecting movement
     #======================
+
+    path_r = Path(path + "/recordings")
+    path_m = Path(path + "/merged")
+    path_l = Path(path + "/logs")
+
+    if path == "/mnt/camera":
+        path_mnt = Path("/mnt/camera")
+        if not path_mnt.exists():
+            path_mnt.mkdir(parents=True)
+
+    for i in [path_r, path_m, path_l]:
+        if not i.exists():
+            i.mkdir(parents=True)
 
 
     cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
-    
     cap.set(
     cv2.CAP_PROP_FOURCC,
     cv2.VideoWriter_fourcc(*'MJPG')
@@ -39,7 +56,7 @@ if __name__ == "__main__":
     out = None
 
     fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps == 0 or fps is None:
+    if fps <= 0 or fps is None:
         fps = 30
         print("FPS 0 error")
 
@@ -88,7 +105,7 @@ if __name__ == "__main__":
                 recording = True
                 print("START")
                 file_name = 'nagranie_' + time.strftime("%Y-%m-%d_%H-%M-%S") + '.mp4'
-                file_path = path + file_name
+                file_path = path + "/recordings/" + file_name
                 out = cv2.VideoWriter(file_path, fourcc, fps, resolution)
 
                 for f in buffer:

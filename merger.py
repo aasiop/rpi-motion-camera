@@ -2,10 +2,13 @@ import os
 import subprocess
 from collections import defaultdict
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
-INPUT_DIR = "/srv/NAS/monitoring/Nagrania"
-OUTPUT_DIR = "/srv/NAS/monitoring/scalone"
-TMP_DIR = "/tmp/ffmpeg_merge"
+load_dotenv()
+
+INPUT_DIR = os.getenv("PROJECT_PATH") + "/recordings"
+OUTPUT_DIR = os.getenv("PROJECT_PATH") + "/merged"
+TMP_DIR = os.getenv("TEMP_DIR")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(TMP_DIR, exist_ok=True)
