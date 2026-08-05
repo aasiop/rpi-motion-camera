@@ -16,8 +16,12 @@ Simple raspberry pi webcam monitoring. It records before and after detecting mov
 ## Requirements
 
 Requirements:
-- python
+- sudo privileges
+- python >= 3.10
+- python-dotenv
+- opencv-python
 - ffmpeg
+- V4L2 compatible camera
 
 ---
 
@@ -28,9 +32,19 @@ Install ffmpeg
 sudo apt install ffmpeg
 ```
 
+Install v4l-utils
+```bash
+sudo apt install python3 python3-pip ffmpeg v4l-utils
+```
+
+Install requirement python libraries
+```bash
+pip install -r requirements.txt
+```
+
 Clone repository
 ```bash
-git clone https://github.com/aasiop/rpi-camera-motion-recorder.git
+git clone https://github.com/aasiop/rpi-motion-camera.git
 ```
 
 Enter repository  
@@ -106,9 +120,9 @@ AFTER_DETECTION_TIME    = 8
 | `TEMP_DIR` | Directory where files are temporary merged     |
 | `RESOLUTION_X` | Screen width                                   |
 | `RESOLUTION_Y` | Screen height                                  |
-| `SENSITIVITY` | higher value = less sensitive motion detection |
-| `BUFFER_TIME` | time after detecting a movement                |
-| `AFTER_DETECTION_TIME` | time before detecting a movement               |
+| `SENSITIVITY` | Higher value = less sensitive motion detection |
+| `BUFFER_TIME` | Seconds recorded before motion detection       |
+| `AFTER_DETECTION_TIME` | Seconds recorded after motion stops            |
 
 ## License
 This project is licensed under the MIT License.

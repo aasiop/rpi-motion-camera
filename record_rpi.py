@@ -21,10 +21,7 @@ if __name__ == "__main__":
     path_m = Path(path + "/merged")
     path_l = Path(path + "/logs")
 
-    if path == "/mnt/camera":
-        path_mnt = Path("/mnt/camera")
-        if not path_mnt.exists():
-            path_mnt.mkdir(parents=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
     for i in [path_r, path_m, path_l]:
         if not i.exists():
@@ -69,10 +66,10 @@ if __name__ == "__main__":
     #Główna pętla
     while True:
         ret, frame = cap.read() #pobiera klatke obrazu, ret - true/false (czy udalo sie pobrac klatke)
-        buffer.append(frame)    #dodaje klatke do bufferu
         if not ret:
             print("Can't recive frames from camera")
             break
+        buffer.append(frame)  # dodaje klatke do bufferu
 
         fgmask = background.apply(frame) #porównuje aktualną klatke z poprzednimi
 
@@ -98,13 +95,13 @@ if __name__ == "__main__":
                 time_w = time.time()
                 if time_w - last_longer >= 3:
                     last_longer=time_w
-                    print("wydluzenie")
+                    print("longer")
             start_time = now #wydluzenie
 
             if not recording:
                 recording = True
                 print("START")
-                file_name = 'nagranie_' + time.strftime("%Y-%m-%d_%H-%M-%S") + '.mp4'
+                file_name = 'rec_' + time.strftime("%Y-%m-%d_%H-%M-%S") + '.mp4'
                 file_path = path + "/recordings/" + file_name
                 out = cv2.VideoWriter(file_path, fourcc, fps, resolution)
 
