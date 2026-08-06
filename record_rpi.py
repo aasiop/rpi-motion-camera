@@ -1,6 +1,7 @@
 import cv2
 import time     #needed for file names
 import os
+import sys
 from dotenv import load_dotenv
 from pathlib import Path
 from collections import deque   #needed for buffer before video starts
@@ -8,14 +9,20 @@ from collections import deque   #needed for buffer before video starts
 if __name__ == "__main__":
     load_dotenv()
 
-    #CONFIG
-    #======================
-    path=os.getenv("PROJECT_PATH")
-    resolution=(int(os.getenv("RESOLUTION_X")), int(os.getenv("RESOLUTION_Y")))
-    sensitivity=int(os.getenv("SENSITIVITY"))      #higher value = less sensivity
-    buffer_time=int(os.getenv("BUFFER_TIME"))     #time before detecting movement
-    after_detection_time=int(os.getenv("AFTER_DETECTION_TIME"))    #time after detecting movement
-    #======================
+    project_dir = Path(__file__).resolve().parent  # gets project path
+
+    try:
+        #CONFIG
+        #======================
+        path=os.getenv("PROJECT_PATH", project_dir)
+        resolution=(int(os.getenv("RESOLUTION_X", 1920)), int(os.getenv("RESOLUTION_Y", 1080)))
+        sensitivity=int(os.getenv("SENSITIVITY", 65))      #higher value = less sensivity
+        buffer_time=int(os.getenv("BUFFER_TIME", 4))     #time before detecting movement
+        after_detection_time=int(os.getenv("AFTER_DETECTION_TIME", 8))    #time after detecting movement
+        #======================
+    except Exception:
+        print("Invalid .env configuration")
+        sys.exit(1)
 
     path_r = Path(path + "/recordings")
     path_m = Path(path + "/merged")

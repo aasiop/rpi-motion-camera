@@ -27,17 +27,12 @@ Requirements:
 
 ## Installation:
 
-Install ffmpeg
-```bash
-sudo apt install ffmpeg
-```
-
-Install v4l-utils
+Install requrements: python, ffmpeg and v4l-utils
 ```bash
 sudo apt install python3 python3-pip ffmpeg v4l-utils
 ```
 
-Install requirement python libraries
+Install requirements: python libraries
 ```bash
 pip install -r requirements.txt
 ```
@@ -69,34 +64,12 @@ nano .env
 
 Set up systemd autostart  
 ```bash
-sudo nano /etc/systemd/system/record_rpi.service
+sudo python3 setup_autostart.py
 ```
 
-Paste  
-```
-[Unit]
-Description=Camera autostart
-
-[Service]
-ExecStart=/usr/bin/python3 /srv/NAS/monitoring/record_rpi.py
-Restart=always
-User=pi
-
-[Install]
-WantedBy=multi-user.target
-```
-Change user=pi to your account username
-
-### Setup file merge time using crontab
-
-Enter crontab configuration  
+Setup file merge using crontab
 ```bash
-crontab -e
-```
-
-Paste into another line   
-```bash
-0 6 * * * /usr/bin/python3 /PATH_TO_REPOSITORY/record_rpi.py >> /PATH_TO_REPOSITORY/logs.log 2>&1
+python3 setup_merging_time.py
 ```
 
 ## Configuration
@@ -112,17 +85,19 @@ RESOLUTION_Y            = 1080
 SENSITIVITY             = 65
 BUFFER_TIME             = 4
 AFTER_DETECTION_TIME    = 8
+MERGE_TIME              = 6:00
 ```
 
-| Variable | Description                                    |
-|----------|------------------------------------------------|
-| `PROJECT_PATH` | Path to store recordings                       |
-| `TEMP_DIR` | Directory where files are temporary merged     |
-| `RESOLUTION_X` | Screen width                                   |
-| `RESOLUTION_Y` | Screen height                                  |
+| Variable | Description                                  |
+|----------|----------------------------------------------|
+| `PROJECT_PATH` | Path to store recordings                     |
+| `TEMP_DIR` | Directory where files are temporary merged   |
+| `RESOLUTION_X` | Screen width                                 |
+| `RESOLUTION_Y` | Screen height                                |
 | `SENSITIVITY` | Higher value = less sensitive motion detection |
-| `BUFFER_TIME` | Seconds recorded before motion detection       |
-| `AFTER_DETECTION_TIME` | Seconds recorded after motion stops            |
+| `BUFFER_TIME` | Seconds recorded before motion detection     |
+| `AFTER_DETECTION_TIME` | Seconds recorded after motion stops          |
+| `MERGE_TIME` | Daily merge time (24h format)        |
 
 ## License
 This project is licensed under the MIT License.
