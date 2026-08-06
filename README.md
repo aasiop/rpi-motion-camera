@@ -72,6 +72,8 @@ Setup file merge using crontab
 python3 setup_merging_time.py
 ```
 
+---
+
 ## Configuration
 
 Create a `.env` file from `.env.example`.
@@ -98,6 +100,32 @@ MERGE_TIME              = 6:00
 | `BUFFER_TIME` | Seconds recorded before motion detection     |
 | `AFTER_DETECTION_TIME` | Seconds recorded after motion stops          |
 | `MERGE_TIME` | Daily merge time (24h format)        |
+
+---
+
+## Uninstallation
+
+Stop and remove systemd service:
+```bash
+sudo systemctl stop rpi-motion-camera.service
+sudo systemctl disable rpi-motion-camera.service
+sudo rm /etc/systemd/system/rpi-motion-camera.service
+sudo systemctl daemon-reload
+```
+
+Remove cronjob:
+```bash
+crontab -l
+```
+
+Remove line with merge.py:
+```text
+0 6 * * * /usr/bin/python3 /path/to/merge.py >> /path/to/logs.log 2>&1
+```
+
+Then delete the remaining files in rpi-motion-camera folder
+
+---
 
 ## License
 This project is licensed under the MIT License.
