@@ -44,7 +44,7 @@ git clone https://github.com/aasiop/rpi-motion-camera.git
 
 Enter repository  
 ```bash
-cd rpi-camera-motion-recorder
+cd rpi-motion-camera
 ```
 
 Create your configuration file:  
@@ -103,19 +103,42 @@ MERGE_TIME              = 6:00
 
 ---
 
+## Usage
+
+Stop program:
+```bash
+sudo systemctl stop rpi-motion-camera.service
+```
+
+Start program:
+```bash
+sudo systemctl start rpi-motion-camera.service
+```
+
+Disable autostart:
+```bash
+sudo systemctl disable rpi-motion-camera.service
+```
+Enable autostart:
+```bash
+sudo systemctl enable rpi-motion-camera.service
+```
+
+---
+
 ## Uninstallation
 
 Stop and remove systemd service:
 ```bash
-sudo systemctl stop rpi-motion-camera.service
-sudo systemctl disable rpi-motion-camera.service
-sudo rm /etc/systemd/system/rpi-motion-camera.service
+sudo systemctl stop rpi-motion-camera.service && \
+sudo systemctl disable rpi-motion-camera.service && \
+sudo rm /etc/systemd/system/rpi-motion-camera.service && \
 sudo systemctl daemon-reload
 ```
 
 Remove cronjob:
 ```bash
-crontab -l
+crontab -e
 ```
 
 Remove line with merge.py:

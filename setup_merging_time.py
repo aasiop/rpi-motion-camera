@@ -8,7 +8,7 @@ project_dir = Path(__file__).resolve().parent
 load_dotenv()
 hours,minutes = (os.getenv("MERGE_TIME", "6:00")).split(":")
 
-cron = f'{minutes} {hours} * * * /usr/bin/python3 {project_dir}/merge.py >> {project_dir}/logs.log 2>&1'
+cron = f'{minutes} {hours} * * * /usr/bin/python3 {project_dir}/merger.py >> {project_dir}/logs.log 2>&1'
 
 #protection against adding another crontab job
 current_crontab = subprocess.run(
