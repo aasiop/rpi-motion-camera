@@ -16,7 +16,7 @@ if __name__ == "__main__":
         #======================
         path=os.getenv("PROJECT_PATH", project_dir)
         resolution=(int(os.getenv("RESOLUTION_X", 1920)), int(os.getenv("RESOLUTION_Y", 1080)))
-        sensitivity=int(os.getenv("SENSITIVITY", 65))      #higher value = less sensivity
+        sensitivity=int(os.getenv("SENSITIVITY", 65))      #sensitivity (higher value = less sensitive)
         buffer_time=int(os.getenv("BUFFER_TIME", 4))     #time before detecting movement
         after_detection_time=int(os.getenv("AFTER_DETECTION_TIME", 8))    #time after detecting movement
         #======================
@@ -49,12 +49,11 @@ if __name__ == "__main__":
 
     #model tła
     background = cv2.createBackgroundSubtractorMOG2(
-        history=800, #ile klatek do porownania
-        varThreshold=sensitivity, #czulosc (wiecej - mniejsza)
+        history=800, #number of frames to compare
+        varThreshold=sensitivity, #sensitivity (higher value = less sensitive)
         detectShadows=True
     )
 
-    #DO NAGRYWANIA
     recording = False
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = None
@@ -70,40 +69,39 @@ if __name__ == "__main__":
 
     start_time = 0
 
-    #Główna pętla
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     while True:
-        ret, frame = cap.read() #pobiera klatke obrazu, ret - true/false (czy udalo sie pobrac klatke)
+        ret, frame = cap.read() #grabs the image frame, ret - true/false (whether the frame was successfully read)
         if not ret:
             print("Can't recive frames from camera")
             break
-        buffer.append(frame)  # dodaje klatke do bufferu
+        buffer.append(frame)  #adds frame to buffer
 
-        fgmask = background.apply(frame) #porównuje aktualną klatke z poprzednimi
+        fgmask = background.apply(frame) #compares the current frame with previous ones
 
-        # usuwanie szumów
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+        #Noise removal
         fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 
-        # znajdowanie ruchu (tworzy liste konturów wokół poruszajacych sie obiektów)
+        #Motion detection (creates a list of contours around moving objects)
         contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        #RETR_EXTERNAL - bierze zewnetrzne kontury
-        #CHAIN_APPROX_SIMPLE - upraszcza zapis (większa wydajność)
+        #RETR_EXTERNAL - retrieves only outer contours
+        #CHAIN_APPROX_SIMPLE - compresses horizontal, vertical, and diagonal segments (better performance)
 
         motion = False
         for c in contours:
-            if cv2.contourArea(c) > 1500: #Jeżeli kontur większy od 1500 to wykryto ruch
+            if cv2.contourArea(c) > 1500: #if contour area is larger than 1500, motion is detected
                 motion = True
 
         now = time.time()
 
-        #jeżeli ruch wykryty
+        #If motion is detected
         if motion:
-            if start_time != 0: #sprawdzanie wydluzenia
+            if start_time != 0: #check for recording extension
                 time_w = time.time()
                 if time_w - last_longer >= 3:
                     last_longer=time_w
                     print("longer")
-            start_time = now #wydluzenie
+            start_time = now #extension
 
             if not recording:
                 recording = True
@@ -115,27 +113,27 @@ if __name__ == "__main__":
                 for f in buffer:
                     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                     cv2.putText(
-                        frame,
+                        f,
                         timestamp,
-                        (10, 30),  # pozycja (x, y)
-                        cv2.FONT_HERSHEY_SIMPLEX,  # czcionka
-                        1,  # rozmiar
-                        (255, 255, 255),  # kolor (biały)
-                        2  # grubość
+                        (10, 30),  #position (x, y)
+                        cv2.FONT_HERSHEY_SIMPLEX,  #font
+                        1,  #font size
+                        (255, 255, 255),  #colour (white)
+                        2  #thickness
                     )
-                    out.write(f) #dodawanie klatki z bufferu
+                    out.write(f) #write to buffer
 
-        #Nagrywanie
+        #Record
         if recording:
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             cv2.putText(
                 frame,
                 timestamp,
-                (10, 30),  # pozycja (x, y)
-                cv2.FONT_HERSHEY_SIMPLEX,  # czcionka
-                1,  # rozmiar
-                (255, 255, 255),  # kolor (biały)
-                2  # grubość
+                (10, 30),  #position (x, y)
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255, 255, 255),
+                2
             )
             out.write(frame)
             if now - start_time > after_detection_time:
@@ -147,5 +145,5 @@ if __name__ == "__main__":
                 start_time=0
 
 
-    cap.release() #odłączenie kamery
+    cap.release() #disconnect camera
     cv2.destroyAllWindows()
