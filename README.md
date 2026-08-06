@@ -27,7 +27,7 @@ Requirements:
 
 ## Installation:
 
-Install requrements: python, ffmpeg and v4l-utils
+Install requirements: python, ffmpeg and v4l-utils
 ```bash
 sudo apt install python3 python3-pip ffmpeg v4l-utils
 ```
@@ -105,6 +105,11 @@ MERGE_TIME              = 6:00
 
 ## Usage
 
+Check program status:
+```bash
+sudo systemctl status rpi-motion-camera.service
+```
+
 Stop program:
 ```bash
 sudo systemctl stop rpi-motion-camera.service
@@ -136,7 +141,7 @@ sudo rm /etc/systemd/system/rpi-motion-camera.service && \
 sudo systemctl daemon-reload
 ```
 
-Remove cronjob:
+Enter cronjob:
 ```bash
 crontab -e
 ```
@@ -146,7 +151,7 @@ Remove line with merge.py:
 0 6 * * * /usr/bin/python3 /path/to/merge.py >> /path/to/logs.log 2>&1
 ```
 
-Then delete the remaining files in rpi-motion-camera folder
+Then delete the remaining files in rpi-motion-camera and recordings folder
 
 ---
 
