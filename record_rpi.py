@@ -69,6 +69,7 @@ if __name__ == "__main__":
 
     start_time = 0
 
+    loop_start_time = time.time()
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     try:
         while True:
@@ -76,7 +77,7 @@ if __name__ == "__main__":
             if not ret:
                 print("Can't recive frames from camera")
                 break
-            buffer.append(frame)  #adds frame to buffer
+            buffer.append((frame, time.strftime("%Y-%m-%d %H:%M:%S")))  # adds frame with its capture timestamp to buffer
 
             fgmask = background.apply(frame) #compares the current frame with previous ones
 
@@ -95,8 +96,8 @@ if __name__ == "__main__":
 
             now = time.time()
 
-            #If motion is detected
-            if motion:
+            #If motion is detected and program is working longer than buffor time
+            if motion and (now - loop_start_time) > buffer_time:
                 if start_time != 0: #check for recording extension
                     time_w = time.time()
                     if time_w - last_longer >= 3:
@@ -111,8 +112,8 @@ if __name__ == "__main__":
                     file_path = path + "/recordings/" + file_name
                     out = cv2.VideoWriter(file_path, fourcc, fps, resolution)
 
-                    for f in buffer:
-                        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                    for f, timestamp in buffer:
+                        #timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                         cv2.putText(
                             f,
                             timestamp,
