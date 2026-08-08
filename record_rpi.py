@@ -15,7 +15,7 @@ if __name__ == "__main__":
         #CONFIG
         #======================
         path=os.getenv("PROJECT_PATH", project_dir)
-        resolution=(int(os.getenv("RESOLUTION_X", 1920)), int(os.getenv("RESOLUTION_Y", 1080)))
+        resolution=(int(os.getenv("RESOLUTION_X", 1280)), int(os.getenv("RESOLUTION_Y", 720)))
         sensitivity=int(os.getenv("SENSITIVITY", 65))      #sensitivity (higher value = less sensitive)
         buffer_time=int(os.getenv("BUFFER_TIME", 4))     #time before detecting movement
         after_detection_time=int(os.getenv("AFTER_DETECTION_TIME", 8))    #time after detecting movement
@@ -40,16 +40,13 @@ if __name__ == "__main__":
     cv2.CAP_PROP_FOURCC,
     cv2.VideoWriter_fourcc(*'MJPG')
     )
-    
+
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
-    
-    print(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    print(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     #model tła
     background = cv2.createBackgroundSubtractorMOG2(
-        history=800, #number of frames to compare
+        history=600, #number of frames to compare
         varThreshold=sensitivity, #sensitivity (higher value = less sensitive)
         detectShadows=True
     )
@@ -66,10 +63,12 @@ if __name__ == "__main__":
     buffer = deque(maxlen=int(fps * buffer_time))
 
     last_longer=0
-
     start_time = 0
-
     loop_start_time = time.time()
+
+    frame_counter = 0 #counts every processed frame since loop start, used to measure the REAL achieved fps
+    #(cap.get(CAP_PROP_FPS) only reports the camera's nominal/declared rate which can be much higher than CPU can handle
+
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     try:
         while True:
@@ -78,6 +77,7 @@ if __name__ == "__main__":
                 print("Can't recive frames from camera")
                 break
             buffer.append((frame, time.strftime("%Y-%m-%d %H:%M:%S")))  # adds frame with its capture timestamp to buffer
+            frame_counter += 1
 
             fgmask = background.apply(frame) #compares the current frame with previous ones
 
@@ -108,12 +108,21 @@ if __name__ == "__main__":
                 if not recording:
                     recording = True
                     print("START")
+
+                    #measure the real, achieved fps up to this point (elapsed real time vs frames actually processed)
+                    #instead of trusting the camera's nominal cap.get(CAP_PROP_FPS) value
+                    elapsed_since_loop_start = now - loop_start_time
+                    if elapsed_since_loop_start > 0:
+                        measured_fps = frame_counter / elapsed_since_loop_start
+                    else:
+                        measured_fps = fps
+                    print(f"Measured real fps: {measured_fps:.2f} (nominal: {fps:.2f})")
+
                     file_name = 'rec_' + time.strftime("%Y-%m-%d_%H-%M-%S") + '.mp4'
                     file_path = path + "/recordings/" + file_name
-                    out = cv2.VideoWriter(file_path, fourcc, fps, resolution)
+                    out = cv2.VideoWriter(file_path, fourcc, measured_fps, resolution)
 
                     for f, timestamp in buffer:
-                        #timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
                         cv2.putText(
                             f,
                             timestamp,
@@ -124,6 +133,12 @@ if __name__ == "__main__":
                             2  #thickness
                         )
                         out.write(f) #write to buffer
+
+                    #continuously (every loop iteration) checks how many frames SHOULD exist by now,
+                    #based on real wall-clock time and the measured_fps declared for this file vs how
+                    #many were actually written - and duplicates/skips frames to correct any drift
+                    frames_written = 0
+                    record_start_wall = time.time()
                     continue
 
             #Record
@@ -138,7 +153,15 @@ if __name__ == "__main__":
                     (255, 255, 255),
                     2
                 )
-                out.write(frame)
+
+                #how many frames SHOULD have been written by now, given real elapsed time
+                frames_expected = int((time.time() - record_start_wall) * measured_fps)
+                while frames_written < frames_expected:
+                    out.write(frame)  #duplicate current frame to catch up or save frame normally or skip
+                    frames_written += 1
+                #if frames_written already >= frames_expected (loop ran ahead of real time),
+                #the loop above doesn't run and this frame is simply skipped/dropped
+
                 if now - start_time > after_detection_time:
                     print("STOP")
                     recording = False

@@ -6,10 +6,10 @@ Simple raspberry pi webcam monitoring. It records before and after detecting mov
 
 ## Features
 
-- Lightweight
 - Motion-triggered recording
 - Pre-motion recording buffer
 - Lossless video merging
+- Automatic systemd setup
 
 ---
 
@@ -100,6 +100,8 @@ MERGE_TIME              = 6:00
 | `BUFFER_TIME` | Seconds recorded before motion detection     |
 | `AFTER_DETECTION_TIME` | Seconds recorded after motion stops          |
 | `MERGE_TIME` | Daily merge time (24h format)        |
+
+#### WARNING: Recording FPS is not configurable. It depends on your Raspberry Pi's processing performance, camera and selected resolution. Higher resolutions increase CPU usage and may reduce the achievable FPS.
 
 ---
 
