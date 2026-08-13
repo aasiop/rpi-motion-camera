@@ -44,7 +44,7 @@ if __name__ == "__main__":
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
 
-    #model tła
+    #background model
     background = cv2.createBackgroundSubtractorMOG2(
         history=600, #number of frames to compare
         varThreshold=sensitivity, #sensitivity (higher value = less sensitive)
