@@ -2,9 +2,46 @@ import cv2
 import time     #needed for file names
 import os
 import sys
+import threading
+import queue
 from dotenv import load_dotenv
 from pathlib import Path
 from collections import deque   #needed for buffer before video starts
+
+
+def writer_worker(write_queue, stop_event): #The writer_worker function runs in the background, continuously collecting and slowly adding data from the queue to merge it
+    current_writer = None
+    while True:
+        try:
+            item = write_queue.get(timeout=0.5)
+        except queue.Empty:
+            if stop_event.is_set():
+                break
+            continue
+
+        cmd = item[0]
+
+        if cmd == "open":
+            _, file_path, fourcc, w_fps, res = item
+            current_writer = cv2.VideoWriter(file_path, fourcc, w_fps, res)
+
+        elif cmd == "frame":
+            if current_writer is not None:
+                current_writer.write(item[1])
+
+        elif cmd == "close":
+            if current_writer is not None:
+                current_writer.release()
+                current_writer = None
+
+        write_queue.task_done()
+
+        if cmd == "close" and stop_event.is_set():
+            break
+
+    if current_writer is not None:
+        current_writer.release()
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -53,7 +90,13 @@ if __name__ == "__main__":
 
     recording = False
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = None
+    writer_active = False  #tracks whether the writer thread currently has an open VideoWriter
+
+    #video writing happens on a separate thread so that encoding/disk I/O never blocks cap.read() in the main loop
+    write_queue = queue.Queue()
+    writer_stop_event = threading.Event()
+    writer_thread = threading.Thread(target=writer_worker, args=(write_queue, writer_stop_event), daemon=True)
+    writer_thread.start()
 
     fps = cap.get(cv2.CAP_PROP_FPS)
     if fps <= 0 or fps is None:
@@ -84,7 +127,7 @@ if __name__ == "__main__":
             #Noise removal
             fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 
-            #Motion detection (creates a list of contours around moving objects)
+            #motion detection (creates a list of contours around moving objects)
             contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             #RETR_EXTERNAL - retrieves only outer contours
             #CHAIN_APPROX_SIMPLE - compresses horizontal, vertical, and diagonal segments (better performance)
@@ -96,7 +139,7 @@ if __name__ == "__main__":
 
             now = time.time()
 
-            #If motion is detected and program is working longer than buffor time
+            #if motion is detected and program is working longer than buffor time
             if motion and (now - loop_start_time) > buffer_time:
                 if start_time != 0: #check for recording extension
                     time_w = time.time()
@@ -120,11 +163,15 @@ if __name__ == "__main__":
 
                     file_name = 'rec_' + time.strftime("%Y-%m-%d_%H-%M-%S") + '.mp4'
                     file_path = path + "/recordings/" + file_name
-                    out = cv2.VideoWriter(file_path, fourcc, measured_fps, resolution)
+
+                    write_queue.put(("open", file_path, fourcc, measured_fps, resolution))
+                    writer_active = True
 
                     for f, timestamp in buffer:
+                        #copy the frame before drawing on it
+                        f_out = f.copy()
                         cv2.putText(
-                            f,
+                            f_out,
                             timestamp,
                             (10, 30),  #position (x, y)
                             cv2.FONT_HERSHEY_SIMPLEX,  #font
@@ -132,7 +179,7 @@ if __name__ == "__main__":
                             (255, 255, 255),  #colour (white)
                             2  #thickness
                         )
-                        out.write(f) #write to buffer
+                        write_queue.put(("frame", f_out)) #hand off to writer thread instead of blocking here
 
                     #continuously (every loop iteration) checks how many frames SHOULD exist by now,
                     #based on real wall-clock time and the measured_fps declared for this file vs how
@@ -144,8 +191,9 @@ if __name__ == "__main__":
             #Record
             if recording:
                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                frame_out = frame.copy() #don't mutate the frame already sitting in buffer
                 cv2.putText(
-                    frame,
+                    frame_out,
                     timestamp,
                     (10, 30),  #position (x, y)
                     cv2.FONT_HERSHEY_SIMPLEX,
@@ -157,7 +205,7 @@ if __name__ == "__main__":
                 #how many frames SHOULD have been written by now, given real elapsed time
                 frames_expected = int((time.time() - record_start_wall) * measured_fps)
                 while frames_written < frames_expected:
-                    out.write(frame)  #duplicate current frame to catch up or save frame normally or skip
+                    write_queue.put(("frame", frame_out))  #duplicate current frame to catch up or save frame normally or skip
                     frames_written += 1
                 #if frames_written already >= frames_expected (loop ran ahead of real time),
                 #the loop above doesn't run and this frame is simply skipped/dropped
@@ -165,12 +213,13 @@ if __name__ == "__main__":
                 if now - start_time > after_detection_time:
                     print("STOP")
                     recording = False
-                    if out is not None:
-                        out.release()
-                    out = None
+                    write_queue.put(("close",))
+                    writer_active = False
                     start_time=0
     finally:
-        if out is not None:
-            out.release()
+        if writer_active:
+            write_queue.put(("close",))
+        writer_stop_event.set()
+        writer_thread.join(timeout=10)
         cap.release()  # disconnect camera
         cv2.destroyAllWindows()
