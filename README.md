@@ -32,11 +32,6 @@ Install requirements: python, ffmpeg and v4l-utils
 sudo apt install python3 python3-pip ffmpeg v4l-utils
 ```
 
-Install requirements: python libraries
-```bash
-pip install -r requirements.txt
-```
-
 Clone repository
 ```bash
 git clone https://github.com/aasiop/rpi-motion-camera.git
@@ -45,6 +40,11 @@ git clone https://github.com/aasiop/rpi-motion-camera.git
 Enter repository  
 ```bash
 cd rpi-motion-camera
+```
+
+Install requirements: python libraries
+```bash
+pip install -r requirements.txt
 ```
 
 Create your configuration file:  
