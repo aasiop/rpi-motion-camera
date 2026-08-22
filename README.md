@@ -1,6 +1,6 @@
 # RPI webcam motion monitoring
 
-Simple raspberry pi webcam monitoring. It records before and after detecting movement. Mainly made for indoors movement detections.
+Simple Raspberry Pi webcam monitoring. It records before and after detecting movement, then combines the clips into continuous daily recordings. Ideal for indoor motion detection.
 
 ---
 
@@ -25,6 +25,24 @@ Requirements:
 
 ---
 
+## Structure
+
+```text
+PROJECT_PATH/
+├── merged/
+│   ├── merged_2026-08-20.mp4
+│   ├── merged_2026-08-21.mp4
+│   └── ...
+├── recordings/
+│   ├── .tmp/
+│   │   ├── rec_2026-08-22_12-15-23.mp4
+│   │   └── ...
+│   ├── rec_2026-08-22_12-12-34.mp4
+│   ├── rec_2026-08-22_12-12-59.mp4
+│   └── ...
+└── logs/
+```
+
 ## Installation:
 
 Install requirements: python, ffmpeg and v4l-utils
@@ -44,7 +62,7 @@ cd rpi-motion-camera
 
 Install requirements: python libraries
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt --break-system-packages
 ```
 
 Create your configuration file:  
