@@ -6,48 +6,48 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-INPUT_DIR = os.getenv("PROJECT_PATH") + "/recordings"
-OUTPUT_DIR = os.getenv("PROJECT_PATH") + "/merged"
+INPUT_DIR = os.path.join(os.getenv("PROJECT_PATH"), "recordings")
+OUTPUT_DIR = os.path.join(os.getenv("PROJECT_PATH"), "merged")
 TMP_DIR = os.getenv("TEMP_DIR")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(TMP_DIR, exist_ok=True)
 
-# Data wczorajsza w formacie YYYY-MM-DD
+#date in format YYYY-MM-DD
 yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 groups = defaultdict(list)
 
-print(f"Szukam plików z dnia: {yesterday}")
+print(f"Finding files from: {yesterday}")
 
-# Wczytanie plików
+#load files
 for file in os.listdir(INPUT_DIR):
     if not file.endswith(".mp4"):
         continue
 
     name = os.path.splitext(file)[0]
 
-    # oczekiwany format:
-    # nagranie_2026-06-24_08-28-58.mp4
+    #expected format:
+    #recording_2026-06-24_08-28-58.mp4
     parts = name.rsplit("_", 2)
 
     if len(parts) != 3:
-        print(f"Pomijam (zła nazwa): {file}")
+        print(f"Skiping... (incorrect name): {file}")
         continue
 
     _, date_part, _ = parts
 
-    # Tylko pliki z poprzedniego dnia
+    #only files from yesterday
     if date_part != yesterday:
         continue
 
     groups[date_part].append(os.path.join(INPUT_DIR, file))
 
 if not groups:
-    print(f"Brak plików z dnia {yesterday}")
+    print(f"No files from {yesterday}")
     exit(0)
 
-# Scalanie + usuwanie
+#Merge and delete
 for date, files in groups.items():
     files.sort()
 
@@ -59,7 +59,7 @@ for date, files in groups.items():
 
     output_file = os.path.join(OUTPUT_DIR, f"merged_{date}.mp4")
 
-    print(f"Łączenie dnia {date} ({len(files)} plików)")
+    print(f"Merging files from {date} ({len(files)})")
 
     cmd = [
         "ffmpeg",
@@ -73,16 +73,15 @@ for date, files in groups.items():
 
     result = subprocess.run(cmd)
 
-    # Usuwanie tylko po udanym scaleniu
+    #Delete only after merging
     if result.returncode == 0:
-        print(f"Scalono poprawnie. Usuwam {len(files)} plików.")
+        print(f"Merged successfully. Deleting {len(files)} files.")
 
         for file in files:
             try:
                 os.remove(file)
             except Exception as e:
-                print(f"Nie mogę usunąć {file}: {e}")
+                print(f"Can't delete {file}: {e}")
     else:
-        print(f"Błąd ffmpeg dla dnia {date} — pliki pozostają.")
-
-print("Gotowe")
+        print(f"ffmpeg error, day {date}.")
+print("DONE!")
