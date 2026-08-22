@@ -41,7 +41,7 @@ def writer_worker(write_queue, stop_event): #The writer_worker function runs in 
                 try:
                     os.rename(current_tmp_path, current_final_path)
                 except Exception as e:
-                    print(f"Nie mogę zmienić nazwy {current_tmp_path}: {e}")
+                    print(f"Cant find path {current_tmp_path}: {e}")
                 current_tmp_path = None
                 current_final_path = None
 

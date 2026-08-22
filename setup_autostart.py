@@ -3,7 +3,7 @@ import sys
 import subprocess
 from pathlib import Path
 
-# must have sudo permissions
+#must have sudo permissions
 if os.geteuid() != 0:
     print("Run this script with sudo.")
     sys.exit(1)
