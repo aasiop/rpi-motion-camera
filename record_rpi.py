@@ -11,6 +11,8 @@ from collections import deque   #needed for buffer before video starts
 
 def writer_worker(write_queue, stop_event): #The writer_worker function runs in the background, continuously collecting and slowly adding data from the queue to merge it
     current_writer = None
+    current_tmp_path = None
+    current_final_path = None
     while True:
         try:
             item = write_queue.get(timeout=0.5)
@@ -22,8 +24,10 @@ def writer_worker(write_queue, stop_event): #The writer_worker function runs in 
         cmd = item[0]
 
         if cmd == "open":
-            _, file_path, fourcc, w_fps, res = item
-            current_writer = cv2.VideoWriter(file_path, fourcc, w_fps, res)
+            _, tmp_path, final_path, fourcc, w_fps, res = item
+            current_writer = cv2.VideoWriter(tmp_path, fourcc, w_fps, res)
+            current_tmp_path = tmp_path
+            current_final_path = final_path
 
         elif cmd == "frame":
             if current_writer is not None:
@@ -33,6 +37,13 @@ def writer_worker(write_queue, stop_event): #The writer_worker function runs in 
             if current_writer is not None:
                 current_writer.release()
                 current_writer = None
+                #The temporary file is stored in .tmp folder until now
+                try:
+                    os.rename(current_tmp_path, current_final_path)
+                except Exception as e:
+                    print(f"Nie mogę zmienić nazwy {current_tmp_path}: {e}")
+                current_tmp_path = None
+                current_final_path = None
 
         write_queue.task_done()
 
@@ -64,13 +75,13 @@ if __name__ == "__main__":
     path_r = Path(path + "/recordings")
     path_m = Path(path + "/merged")
     path_l = Path(path + "/logs")
+    path_t = Path(path + "/recordings/.tmp") #folder to store .mp4 file until it is saved to recordings
 
     Path(path).mkdir(parents=True, exist_ok=True)
 
-    for i in [path_r, path_m, path_l]:
+    for i in [path_r, path_m, path_l, path_t]:
         if not i.exists():
             i.mkdir(parents=True)
-
 
     cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
     cap.set(
@@ -163,8 +174,9 @@ if __name__ == "__main__":
 
                     file_name = 'rec_' + time.strftime("%Y-%m-%d_%H-%M-%S") + '.mp4'
                     file_path = path + "/recordings/" + file_name
+                    tmp_path = str(path_t) + "/" + file_name #record to temporary folder
 
-                    write_queue.put(("open", file_path, fourcc, measured_fps, resolution))
+                    write_queue.put(("open", tmp_path, file_path, fourcc, measured_fps, resolution))
                     writer_active = True
 
                     for f, timestamp in buffer:
